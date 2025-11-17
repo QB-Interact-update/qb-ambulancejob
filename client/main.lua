@@ -901,10 +901,18 @@ RegisterNetEvent('qb-ambulancejob:beds', function(hospitalIndex, bedId)
 end)
 
 -- Convar turns into a boolean
-if Config.UseTarget then
-    CreateThread(function()
-        for i = 1, #Config.Locations['checking'] do
-            local v = Config.Locations['checking'][i]
+CreateThread(function()
+    for i = 1, #Config.Locations['checking'] do
+        local v = Config.Locations['checking'][i]
+        local options = {
+            {
+                type = 'client',
+                icon = 'fa fa-clipboard',
+                event = 'qb-ambulancejob:checkin',
+                label = 'Check In',
+            }
+        }
+        if Config.UseTarget then
             exports['qb-target']:AddBoxZone('checking' .. i, vector3(v.x, v.y, v.z), 3.5, 2, {
                 name = 'checking' .. i,
                 heading = -72,
@@ -912,21 +920,42 @@ if Config.UseTarget then
                 minZ = v.z - 2,
                 maxZ = v.z + 2,
             }, {
-                options = {
-                    {
-                        type = 'client',
-                        icon = 'fa fa-clipboard',
-                        event = 'qb-ambulancejob:checkin',
-                        label = 'Check In',
-                    }
-                },
+                options = options,
                 distance = 1.5
             })
+        else
+            exports['qb-interact']:addInteractZone({
+                name = 'checking' .. i,
+                coords = vector3(v.x, v.y, v.z),
+                length = 3.5,
+                width = 2,
+                options = options,
+                debugPoly = false,
+                height = 2,
+            })
         end
-
-        for hospitalKey = 1, #Config.Locations['hospital'] do
-            for bedKey = 1, #Config.Locations['hospital'][hospitalKey]['beds'] do
-                local v = Config.Locations['hospital'][hospitalKey]['beds'][bedKey]
+    end
+    for hospitalKey = 1, #Config.Locations['hospital'] do
+        for bedKey = 1, #Config.Locations['hospital'][hospitalKey]['beds'] do
+            local v = Config.Locations['hospital'][hospitalKey]['beds'][bedKey]
+            local options = {
+                {
+                    type = 'client',
+                    icon = 'fas fa-bed',
+                    event = 'qb-ambulancejob:beds',
+                    label = 'Layin Bed',
+                    canInteract = function()
+                        if v.taken then
+                            return false
+                        end
+                        if isInHospitalBed then
+                            return false
+                        end
+                        return true
+                    end,
+                }
+            }
+            if Config.UseTarget then
                 exports['qb-target']:AddBoxZone('beds' .. bedKey, v.coords, 2.5, 2.3, {
                     name = 'beds' .. bedKey .. Config.Locations['hospital'][hospitalKey]['name'],
                     heading = -20,
@@ -934,73 +963,20 @@ if Config.UseTarget then
                     minZ = v.coords.z - 1,
                     maxZ = v.coords.z + 1,
                 }, {
-                    options = {
-                        {
-                            type = 'client',
-                            event = 'qb-ambulancejob:beds',
-                            icon = 'fas fa-bed',
-                            label = 'Layin Bed',
-                        }
-                    },
+                    options = options,
                     distance = 1.5
                 })
-            end
-        end
-    end)
-else
-    CreateThread(function()
-        local checkingPoly = {}
-        for i = 1, #Config.Locations['checking'] do
-            local v = Config.Locations['checking'][i]
-            checkingPoly[#checkingPoly + 1] = BoxZone:Create(vector3(v.x, v.y, v.z), 3.5, 2, {
-                heading = -72,
-                name = 'checkin' .. i,
-                debugPoly = false,
-                minZ = v.z - 2,
-                maxZ = v.z + 2,
-            })
-            local checkingCombo = ComboZone:Create(checkingPoly, { name = 'checkingCombo', debugPoly = false })
-            checkingCombo:onPlayerInOut(function(isPointInside)
-                if isPointInside then
-                    if doctorCount >= Config.MinimalDoctors then
-                        exports['qb-core']:DrawText(Lang:t('text.call_doc'), 'left')
-                        CheckInControls('checkin')
-                    else
-                        exports['qb-core']:DrawText(Lang:t('text.check_in'), 'left')
-                        CheckInControls('checkin')
-                    end
-                else
-                    listen = false
-                    exports['qb-core']:HideText()
-                end
-            end)
-        end
-        local bedPoly = {}
-        for hospitalKey = 1, #Config.Locations['hospital'] do
-            for bedKey = 1, #Config.Locations['hospital'][hospitalKey]['beds'] do
-                local v = Config.Locations['hospital'][hospitalKey]['beds'][bedKey]
-                bedPoly[#bedPoly + 1] = BoxZone:Create(v.coords, 2.5, 2.3, {
+            else
+                exports['qb-interact']:addInteractZone({
                     name = 'beds' .. bedKey .. Config.Locations['hospital'][hospitalKey]['name'],
-                    heading = -20,
+                    coords = v.coords,
+                    length = 2.5,
+                    width = 2.3,
+                    options = options,
                     debugPoly = false,
-                    minZ = v.coords.z - 1,
-                    maxZ = v.coords.z + 1,
-                    data = {
-                        bedId = bedKey
-                    },
+                    height = 2,
                 })
-                local bedCombo = ComboZone:Create(bedPoly, { name = 'bedCombo', debugPoly = false })
-                bedCombo:onPlayerInOut(function(isPointInside, _, zone)
-                    if isPointInside and not isInHospitalBed then
-                        exports['qb-core']:DrawText(Lang:t('text.lie_bed'), 'left')
-                        local bedId = zone.data.bedId
-                        CheckInControls('beds', hospitalKey, bedId)
-                    else
-                        listen = false
-                        exports['qb-core']:HideText()
-                    end
-                end)
             end
         end
-    end)
-end
+    end
+end)

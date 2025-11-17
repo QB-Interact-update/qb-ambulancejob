@@ -442,10 +442,20 @@ CreateThread(function()
 end)
 
 -- Convar turns into a boolean
-if Config.UseTarget then
-    CreateThread(function()
-        for i = 1, #Config.Locations['duty'] do
-            local v = Config.Locations['duty'][i]
+
+CreateThread(function()
+    for i = 1, #Config.Locations['duty'] do
+        local options = {
+            {
+                type = 'client',
+                event = 'EMSToggle:Duty',
+                icon = 'fa fa-clipboard',
+                label = 'Sign In/Off duty',
+                job = 'ambulance'
+            }
+        }
+        local v = Config.Locations['duty'][i]
+        if Config.UseTarget then
             exports['qb-target']:AddBoxZone('duty' .. i, vector3(v.x, v.y, v.z), 1.5, 1, {
                 name = 'duty' .. i,
                 debugPoly = false,
@@ -453,20 +463,32 @@ if Config.UseTarget then
                 minZ = v.z - 2,
                 maxZ = v.z + 2,
             }, {
-                options = {
-                    {
-                        type = 'client',
-                        event = 'EMSToggle:Duty',
-                        icon = 'fa fa-clipboard',
-                        label = 'Sign In/Off duty',
-                        job = 'ambulance'
-                    }
-                },
+                options = options,
                 distance = 1.5
             })
+        else
+            exports['qb-interact']:addInteractZone({
+                name = 'duty' .. i,
+                coords = vector3(v.x, v.y, v.z),
+                height = 3.0,
+                width = 2.0,
+                length = 2.0,
+                options = options,
+            })
         end
-        for i = 1, #Config.Locations['stash'] do
-            local v = Config.Locations['stash'][i]
+    end
+    for i = 1, #Config.Locations['stash'] do
+        local v = Config.Locations['stash'][i]
+        local options = {
+            {
+                type = 'server',
+                event = 'qb-ambulancejob:server:stash',
+                icon = 'fa fa-hand',
+                label = 'Open Stash',
+                job = 'ambulance'
+            }
+        }
+        if Config.UseTarget then
             exports['qb-target']:AddBoxZone('stash' .. i, vector3(v.x, v.y, v.z), 1, 1, {
                 name = 'stash' .. i,
                 debugPoly = false,
@@ -474,20 +496,32 @@ if Config.UseTarget then
                 minZ = v.z - 2,
                 maxZ = v.z + 2,
             }, {
-                options = {
-                    {
-                        type = 'server',
-                        event = 'qb-ambulancejob:server:stash',
-                        icon = 'fa fa-hand',
-                        label = 'Open Stash',
-                        job = 'ambulance'
-                    }
-                },
+                options = options,
                 distance = 1.5
             })
+        else
+            exports['qb-interact']:addInteractZone({
+                name = 'stash' .. i,
+                coords = vector3(v.x, v.y, v.z),
+                height = 3.0,
+                width = 2.0,
+                length = 2.0,
+                options = options,
+            })
         end
-        for i = 1, #Config.Locations['roof'] do
-            local v = Config.Locations['roof'][i]
+    end
+    for i = 1, #Config.Locations['roof'] do
+        local v = Config.Locations['roof'][i]
+        local options = {
+            {
+                type = 'client',
+                event = 'qb-ambulancejob:elevator_roof',
+                icon = 'fas fa-hand-point-up',
+                label = 'Take Elevator',
+                job = 'ambulance'
+            },
+        }
+        if Config.UseTarget then
             exports['qb-target']:AddBoxZone('roof' .. i, vector3(v.x, v.y, v.z), 2, 2, {
                 name = 'roof' .. i,
                 debugPoly = false,
@@ -495,20 +529,32 @@ if Config.UseTarget then
                 minZ = v.z - 2,
                 maxZ = v.z + 2,
             }, {
-                options = {
-                    {
-                        type = 'client',
-                        event = 'qb-ambulancejob:elevator_roof',
-                        icon = 'fas fa-hand-point-up',
-                        label = 'Take Elevator',
-                        job = 'ambulance'
-                    },
-                },
+                options = options,  
                 distance = 8
             })
+        else
+            exports['qb-interact']:addInteractZone({
+                name = 'roof' .. i,
+                coords = vector3(v.x, v.y, v.z),
+                height = 3.0,
+                width = 2.0,
+                length = 2.0,
+                options = options,
+            })
         end
-        for i = 1, #Config.Locations['main'] do
-            local v = Config.Locations['main'][i]
+    end
+    for i = 1, #Config.Locations['main'] do
+        local options = {
+            {
+                type = 'client',
+                event = 'qb-ambulancejob:elevator_main',
+                icon = 'fas fa-hand-point-up',
+                label = 'Take Elevator',
+                job = 'ambulance'
+            },
+        }
+        local v = Config.Locations['main'][i]
+        if Config.UseTarget then
             exports['qb-target']:AddBoxZone('main' .. i, vector3(v.x, v.y, v.z), 1.5, 1.5, {
                 name = 'main' .. i,
                 debugPoly = false,
@@ -516,126 +562,18 @@ if Config.UseTarget then
                 minZ = v.z - 2,
                 maxZ = v.z + 2,
             }, {
-                options = {
-                    {
-                        type = 'client',
-                        event = 'qb-ambulancejob:elevator_main',
-                        icon = 'fas fa-hand-point-up',
-                        label = 'Take Elevator',
-                        job = 'ambulance'
-                    },
-                },
+                options = options,
                 distance = 8
             })
-        end
-    end)
-else
-    CreateThread(function()
-        local signPoly = {}
-        for i = 1, #Config.Locations['duty'] do
-            local v = Config.Locations['duty'][i]
-            signPoly[#signPoly + 1] = BoxZone:Create(vector3(v.x, v.y, v.z), 1.5, 1, {
-                name = 'sign' .. i,
-                debugPoly = false,
-                heading = -20,
-                minZ = v.z - 2,
-                maxZ = v.z + 2,
-            })
-        end
-
-        local signCombo = ComboZone:Create(signPoly, { name = 'signcombo', debugPoly = false })
-        signCombo:onPlayerInOut(function(isPointInside)
-            if isPointInside and PlayerJob.name == 'ambulance' then
-                if not onDuty then
-                    exports['qb-core']:DrawText(Lang:t('text.onduty_button'), 'left')
-                    EMSControls('sign')
-                else
-                    exports['qb-core']:DrawText(Lang:t('text.offduty_button'), 'left')
-                    EMSControls('sign')
-                end
-            else
-                check = false
-                exports['qb-core']:HideText()
-            end
-        end)
-
-        local stashPoly = {}
-        for i = 1, #Config.Locations['stash'] do
-            local v = Config.Locations['stash'][i]
-            stashPoly[#stashPoly + 1] = BoxZone:Create(vector3(v.x, v.y, v.z), 1, 1, {
-                name = 'stash' .. i,
-                debugPoly = false,
-                heading = -20,
-                minZ = v.z - 2,
-                maxZ = v.z + 2,
-            })
-        end
-
-        local stashCombo = ComboZone:Create(stashPoly, { name = 'stashCombo', debugPoly = false })
-        stashCombo:onPlayerInOut(function(isPointInside)
-            if isPointInside and PlayerJob.name == 'ambulance' then
-                if onDuty then
-                    exports['qb-core']:DrawText(Lang:t('text.pstash_button'), 'left')
-                    EMSControls('stash')
-                end
-            else
-                check = false
-                exports['qb-core']:HideText()
-            end
-        end)
-
-        local roofPoly = {}
-        for i = 1, #Config.Locations['roof'] do
-            local v = Config.Locations['roof'][i]
-            roofPoly[#roofPoly + 1] = BoxZone:Create(vector3(v.x, v.y, v.z), 2, 2, {
-                name = 'roof' .. i,
-                debugPoly = false,
-                heading = 70,
-                minZ = v.z - 2,
-                maxZ = v.z + 2,
-            })
-        end
-
-        local roofCombo = ComboZone:Create(roofPoly, { name = 'roofCombo', debugPoly = false })
-        roofCombo:onPlayerInOut(function(isPointInside)
-            if isPointInside and PlayerJob.name == 'ambulance' then
-                if onDuty then
-                    exports['qb-core']:DrawText(Lang:t('text.elevator_main'), 'left')
-                    EMSControls('main')
-                else
-                    exports['qb-core']:DrawText(Lang:t('error.not_ems'), 'left')
-                end
-            else
-                check = false
-                exports['qb-core']:HideText()
-            end
-        end)
-
-        local mainPoly = {}
-        for i = 1, #Config.Locations['main'] do
-            local v = Config.Locations['main'][i]
-            mainPoly[#mainPoly + 1] = BoxZone:Create(vector3(v.x, v.y, v.z), 1.5, 1.5, {
+        else
+            exports['qb-interact']:addInteractZone({
                 name = 'main' .. i,
-                debugPoly = false,
-                heading = 70,
-                minZ = v.z - 2,
-                maxZ = v.z + 2,
+                coords = vector3(v.x, v.y, v.z),
+                height = 3.0,
+                width = 2.0,
+                length = 2.0,
+                options = options,
             })
         end
-
-        local mainCombo = ComboZone:Create(mainPoly, { name = 'mainPoly', debugPoly = false })
-        mainCombo:onPlayerInOut(function(isPointInside)
-            if isPointInside and PlayerJob.name == 'ambulance' then
-                if onDuty then
-                    exports['qb-core']:DrawText(Lang:t('text.elevator_roof'), 'left')
-                    EMSControls('roof')
-                else
-                    exports['qb-core']:DrawText(Lang:t('error.not_ems'), 'left')
-                end
-            else
-                check = false
-                exports['qb-core']:HideText()
-            end
-        end)
-    end)
-end
+    end
+end)
